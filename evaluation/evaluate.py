@@ -35,7 +35,7 @@ def load_and_evaluate(model_dir,specific_model_filename):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     print(f"Using device: {device}")
 
-    configurations = {'dataset_class': "DefaultCIFAR10", 'model': None, 'mode': None, 'fill_background': None, 'crop_size': None, 'batch_size': 64}
+    configurations = {'dataset_class': "DefaultCIFAR10", 'model': None, 'mode': None, 'fill_background': None, 'crop_size': None, 'batch_size': 32}
 
 
     test_dataset = DatasetFactory.create_dataset(
@@ -48,7 +48,7 @@ def load_and_evaluate(model_dir,specific_model_filename):
         fill_background=configurations.get('fill_background'),
         crop_size=configurations.get('crop_size')
     )
-    test_loader = DataLoader(test_dataset, batch_size=configurations['batch_size'], shuffle=True)
+    test_loader = DataLoader(test_dataset, batch_size=configurations['batch_size'], shuffle=False)
 
     if specific_model_filename:
         model_files = [specific_model_filename]
@@ -108,12 +108,12 @@ def load_and_evaluate(model_dir,specific_model_filename):
         evaluation_results = new_stdout.getvalue()
 
         model_name = os.path.basename(model_path)
-        store_model_evaluation(model_name, evaluation_results, '../model_evaluations1.csv')
+        store_model_evaluation(model_name, evaluation_results, '../csv/image.csv')
 
 
 
 if __name__ == "__main__":
-    model_dir = '../saved_models10ep(nofull)'
+    model_dir = '../training/adam(lr0.0001)steplr(ss2-gamma0.1)-batch32-5ep-BCElogit-1time'
     specific_model = None
     load_and_evaluate(model_dir, specific_model_filename=specific_model)
 

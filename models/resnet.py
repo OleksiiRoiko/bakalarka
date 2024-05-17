@@ -1,7 +1,6 @@
 # models/resnet.py
 import torch.nn as nn
 import torch.nn.functional as f
-
 class ResidualBlock(nn.Module):
     def __init__(self, in_channels, out_channels, stride=1):
         super(ResidualBlock, self).__init__()
@@ -56,3 +55,4 @@ class ResNet(nn.Module):
         out = out.view(out.size(0), -1)
         out = self.fc(out)
         return out
+

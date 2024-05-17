@@ -1,5 +1,5 @@
 from torch.utils.data import DataLoader
-from models import create_tiny_resnet, BATCH_SIZE, NUM_WORKERS, attention
+from models import create_tiny_resnet, BATCH_SIZE, NUM_WORKERS
 import matplotlib.pyplot as plt
 from torchvision import transforms, datasets, utils
 import torch
@@ -23,7 +23,7 @@ def visualize_masks(loader, model):
         for x, _ in loader:
             x = x.cuda()
             seg_out = model(x)
-            attn = attention(seg_out)
+            attn = torch.sigmoid(torch.logsumexp(seg_out, 1, keepdim=True))
             for i in range(min(len(x), 1)):  # Visualize the first 5 images
                 original_img = utils.make_grid(x[i].cpu()).numpy().transpose(1, 2, 0)
                 mask = attn[i].cpu().numpy()[0]

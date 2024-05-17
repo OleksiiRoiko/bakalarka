@@ -1,34 +1,33 @@
-import torch
-import torch.nn.functional as F
-import torch.nn as nn
 import numpy as np
 from scipy.interpolate import interp1d
-
-
-def evaluate_model(model, testloader, device, num_classes):
+from torch.nn import BCEWithLogitsLoss
+import torch
+from torch.nn.functional import one_hot
+def evaluate_model(model, loader, device, num_classes):
     model.eval()
-    total_loss, correct, total = 0.0, 0, 0
-    criterion = nn.BCEWithLogitsLoss()
+    criterion = BCEWithLogitsLoss()
+    total_loss, correct, total = 0, 0, 0
 
     with torch.no_grad():
-        for images, labels in testloader:
+        for images, labels in loader:
             images, labels = images.to(device), labels.to(device)
             outputs = model(images)
-            outputs = outputs[:, :num_classes]
+            outputs = outputs[:,:num_classes]
 
-            if labels.ndim == 1 and labels.dtype == torch.int64:
-                labels = F.one_hot(labels, num_classes=num_classes).float()
+            if labels.dtype == torch.int64:
+                labels = one_hot(labels, num_classes=num_classes).float()
 
             loss = criterion(outputs, labels)
             total_loss += loss.item()
 
-            probs = torch.sigmoid(outputs)
-            preds = torch.argmax(probs, dim=1)
-            labels_max = torch.argmax(labels, dim=1)
-            correct += (preds == labels_max).sum().item()
+            preds = outputs.sigmoid().max(1)[1]
+            correct += preds.eq(labels.max(1)[1]).sum().item()
             total += labels.size(0)
 
-    return total_loss / len(testloader), 100 * correct / total
+    avg_loss = total_loss / len(loader)
+    accuracy = 100 * correct / total
+
+    return avg_loss, accuracy
 
 def evaluate_model_with_data_collection(model, testloader, device, num_classes, prah_threshold=0.0):
     model.eval()
@@ -41,19 +40,18 @@ def evaluate_model_with_data_collection(model, testloader, device, num_classes, 
         for images, labels in testloader:
             images, labels = images.to(device), labels.to(device)
             outputs = model(images)
-            outputs = outputs[:, :num_classes]
+            outputs = outputs[:,:num_classes]
 
-            if labels.ndim == 1 and labels.dtype == torch.int64:
-                labels = F.one_hot(labels, num_classes=num_classes).float()
+            if labels.dtype == torch.int64:
+                labels = torch.nn.functional.one_hot(labels, num_classes=num_classes).float()
 
             probabilities = torch.sigmoid(outputs)
-            top_two_probs = probabilities.topk(2, dim=1)[0]
+            top_two_probs = probabilities.topk(2, dim=1).values
             diff = top_two_probs[:, 0] - top_two_probs[:, 1]
             diff_all.extend(diff.cpu().numpy())
 
-            _, predicted = torch.max(probabilities, 1)
-            _, labels_max = torch.max(labels, 1)
-
+            _, predicted = probabilities.max(1)
+            _, labels_max = labels.max(1) if labels.ndim > 1 else (None, labels)
             classified_mask = diff > prah_threshold
             total_classified += classified_mask.sum().item()
             not_classified += (~classified_mask).sum().item()
@@ -64,8 +62,10 @@ def evaluate_model_with_data_collection(model, testloader, device, num_classes, 
             correct_not_classified += (correct_mask & ~classified_mask).sum().item()
             incorrect_not_classified += (~correct_mask & ~classified_mask).sum().item()
 
-            diff_correct.extend(diff[correct_mask & classified_mask].cpu().numpy())
-            diff_incorrect.extend(diff[~correct_mask & classified_mask].cpu().numpy())
+            if correct_mask.any():
+                diff_correct.extend(diff[correct_mask & classified_mask].cpu().numpy())
+            if (~correct_mask).any():
+                diff_incorrect.extend(diff[~correct_mask & classified_mask].cpu().numpy())
 
     accuracy = 100.0 * correct_classified / total_classified if total_classified > 0 else 0
 
@@ -89,63 +89,67 @@ def evaluate_model_with_data_collection(model, testloader, device, num_classes, 
 def collect_probabilities_and_labels(model, testloader, device):
     model.eval()
     probabilities = []
-    hard_true_labels = []
+    true_labels = []
 
     with torch.no_grad():
         for images, labels in testloader:
             images = images.to(device)
             outputs = model(images)
+            outputs = outputs[:,:10]
+
+            if labels.dtype == torch.int64:
+                labels = torch.nn.functional.one_hot(labels, num_classes=10).float()
 
             probs = torch.sigmoid(outputs)
 
             probabilities.append(probs.cpu())
-
-            if labels.ndim == 1:
-                hard_true_labels.append(labels.cpu())
-            elif labels.ndim == 2:
-                _, hard_labels = torch.max(labels, dim=1)
-                hard_true_labels.append(hard_labels.cpu())
-            else:
-                raise ValueError("Unsupported label dimensions")
+            true_labels.append(labels.cpu())
 
     probabilities = torch.cat(probabilities, dim=0)
-    hard_true_labels = torch.cat(hard_true_labels, dim=0)
+    true_labels = torch.cat(true_labels, dim=0)
 
-    return probabilities, hard_true_labels
+    return probabilities, true_labels
 
 def compute_ece(probabilities, true_labels, n_bins=15):
     bin_bounds = torch.linspace(0, 1, n_bins + 1)
     ece = torch.tensor(0.0)
-    max_probs, max_indices = probabilities.max(dim=1)
+    max_probs, predicted_indices = probabilities.max(dim=1)
+    true_indices = true_labels.max(dim=1)[1]  # Индекс максимального значения в мягких метках
     bin_indices = torch.bucketize(max_probs, bin_bounds) - 1
+
     for i in range(n_bins):
         in_bin = bin_indices == i
         if in_bin.any():
-            true_labels_in_bin = true_labels[in_bin]
-            predicted_in_bin = max_indices[in_bin]
+            true_labels_in_bin = true_indices[in_bin]
+            predicted_in_bin = predicted_indices[in_bin]
             bin_accuracy = (predicted_in_bin == true_labels_in_bin).float().mean()
             bin_confidence = max_probs[in_bin].mean()
             bin_weight = in_bin.float().mean().clamp(min=1e-8)
             ece += torch.abs(bin_confidence - bin_accuracy) * bin_weight
     return ece
 
+
 def compute_ace(probabilities, true_labels, n_bins=15):
     ace = torch.tensor(0.0)
-    max_probs, max_indices = probabilities.max(dim=1)
+    max_probs, predicted_indices = probabilities.max(dim=1)
+    true_indices = true_labels.max(dim=1)[1]  # Получение индексов максимальных значений из мягких меток
     quantiles = torch.linspace(0, 1, n_bins + 1)
     bin_edges = torch.quantile(max_probs, quantiles)
+
     for i in range(n_bins):
         bin_lower = bin_edges[i]
         bin_upper = bin_edges[i + 1]
         in_bin = (max_probs >= bin_lower) & (max_probs < bin_upper)
         if in_bin.any():
-            true_labels_in_bin = true_labels[in_bin]
-            predicted_in_bin = max_indices[in_bin]
+            true_labels_in_bin = true_indices[in_bin]
+            predicted_in_bin = predicted_indices[in_bin]
             bin_accuracy = (predicted_in_bin == true_labels_in_bin).float().mean()
             bin_confidence = max_probs[in_bin].mean()
             bin_weight = in_bin.float().mean().clamp(min=1e-8)
             ace += torch.abs(bin_confidence - bin_accuracy) * bin_weight
+
     return ace
+
 
 def calculate_score(accuracy, total_classified, total_images, alpha=0.5, beta=0.5):
     return (alpha * accuracy) + (beta * (total_classified / total_images * 100))

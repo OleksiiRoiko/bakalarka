@@ -17,21 +17,10 @@ segmentation_model.to(device)
 
 configurations = [
     {'dataset_class': "SegmentedCIFAR10WithObject",'model': segmentation_model, 'mode': 4, 'fill_background': True, 'crop_size': None },
-
     {'dataset_class': "CIFAR10WithBackground", 'model': segmentation_model, 'mode': 4,'fill_background': False, 'crop_size': None },
-    {'dataset_class': "CIFAR10WithBackground", 'model': None, 'mode': 2,'fill_background': None, 'crop_size': 16 },
-    {'dataset_class': "CIFAR10WithBackgroundSoftLabel", 'model': segmentation_model, 'mode': 4,'fill_background': False, 'crop_size': None },
-    {'dataset_class': "CIFAR10WithBackgroundSoftLabel", 'model': None, 'mode': 2,'fill_background': None, 'crop_size': 16 },
-    {'dataset_class': "CIFAR10WithDistributedSoftBackgroundLabels", 'model': segmentation_model, 'mode': 4,'fill_background': False, 'crop_size': None },
-    {'dataset_class': "CIFAR10WithDistributedSoftBackgroundLabels", 'model': None, 'mode': 2,'fill_background': None, 'crop_size': 16 },
-    {'dataset_class': "CIFAR10WithClassSpecificBackground", 'model': segmentation_model, 'mode': 4,'fill_background': False, 'crop_size': None },
-    {'dataset_class': "CIFAR10WithClassSpecificBackground", 'model': None, 'mode': 2,'fill_background': None, 'crop_size': 16 },
-    {'dataset_class': "CIFAR10WithClassSpecificBackgroundSoftLabel", 'model': segmentation_model, 'mode': 4,'fill_background': False, 'crop_size': None },
-    {'dataset_class': "CIFAR10WithClassSpecificBackgroundSoftLabel", 'model': None, 'mode': 2,'fill_background': None, 'crop_size': 16 },
-    {'dataset_class': "CIFAR10WithDistributedClassSpecificSoftBackgroundLabels", 'model': segmentation_model, 'mode': 4,'fill_background': False, 'crop_size': None },
-    {'dataset_class': "CIFAR10WithDistributedClassSpecificSoftBackgroundLabels", 'model': None, 'mode': 2,'fill_background': None, 'crop_size': 16 },
-
-    {'dataset_class': "DefaultCIFAR10", 'model': None, 'mode': None, 'fill_background': None, 'crop_size': None}
+    {'dataset_class': "CIFAR10WithBackground", 'model': None, 'mode': 1,'fill_background': None, 'crop_size': 8 },
+    {'dataset_class': "CIFAR10WithBackground", 'model': None, 'mode': 2,'fill_background': None, 'crop_size': 8 },
+    {'dataset_class': "CIFAR10WithBackground", 'model': None, 'mode': 3,'fill_background': None, 'crop_size': 8 },
 
 ]
 
@@ -47,7 +36,7 @@ for config in configurations:
         fill_background=config.get('fill_background'),
         crop_size=config.get('crop_size')
     )
-    img, label = dataset[0]
+    img, label = dataset[50004]
     print(dataset.__len__())
 
     img = to_pil_image(img) if isinstance(img, torch.Tensor) else img
