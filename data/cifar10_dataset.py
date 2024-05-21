@@ -23,7 +23,7 @@ class CIFAR10Utils:
             'bottom_left': (0, height - crop_size, crop_size, height),
             'bottom_right': (width - crop_size, height - crop_size, width, height)
         }
-        return image.crop(corners[corner])
+        return image.crop(corners[corner]), corners[corner]
 
     @staticmethod
     def crop_resize_combine_corners(image, corner_crop_size):
@@ -39,12 +39,12 @@ class CIFAR10Utils:
         for i, (corner, coordinates) in enumerate(corners.items()):
             crop = image.crop(coordinates).resize(resized_corner_size)
             final_image.paste(crop, ((i % 2) * 16, (i // 2) * 16))
-        return final_image
+        return final_image, list(corners.values())
 
     @staticmethod
     def segment_image(img, model, fill_background=None):
         device = next(model.parameters()).device
-        img_tensor = to_tensor(img).unsqueeze(0).to(device)
+        img_tensor = to_tensor(img).float().unsqueeze(0).to(device)
         model.eval()
         with torch.no_grad():
             seg_out = model(img_tensor)
@@ -55,12 +55,14 @@ class CIFAR10Utils:
 
         if fill_background:
             background_color = CIFAR10Utils.calculate_mean_color(original_img, ~mask)
-            segmented_img = np.where(mask[..., None], original_img, background_color)
+            white_color = np.ones_like(original_img) * 1.0
+            segmented_img = np.where(mask[..., None], original_img, white_color)
         else:
-            object_color = CIFAR10Utils.calculate_mean_color(original_img, mask)
-            segmented_img = np.where(mask[..., None], object_color, original_img)
+            background_color_distribution = CIFAR10Utils.get_color_distribution(original_img, ~mask)
+            background_color = CIFAR10Utils.calculate_mean_color(original_img, ~mask)
+            segmented_img = CIFAR10Utils.apply_color_distribution(original_img, mask, background_color)
 
-        return segmented_img
+        return segmented_img, None
 
     @staticmethod
     def calculate_mean_color(img, mask):
@@ -69,28 +71,43 @@ class CIFAR10Utils:
         return mean_color
 
     @staticmethod
+    def get_color_distribution(img, mask):
+        masked_pixels = img[mask]
+        return masked_pixels
+
+    @staticmethod
+    def apply_color_distribution(img, mask, color_distribution):
+        h, w, c = img.shape
+        flat_color_distribution = color_distribution.reshape(-1, c)
+        sampled_colors = flat_color_distribution[np.random.choice(flat_color_distribution.shape[0], mask.sum(), replace=True)]
+        segmented_img = img.copy()
+        segmented_img[mask] = sampled_colors
+
+        return segmented_img
+
+    @staticmethod
     def create_background_image(image, mode, crop_size=None, model=None, fill_background=None):
         if isinstance(image, torch.Tensor):
             image = to_pil_image(image)
 
         if mode == 1:
             x, y = random.randint(0, 24), random.randint(0, 24)
+            crop_coords = (x, y, x + crop_size, y + crop_size)
             cropped_image = crop(image, x, y, crop_size, crop_size)
             resized_image = resize(cropped_image, [32, 32])
+            return resized_image, crop_coords
         elif mode == 2:
             corner = random.choice(['top_left', 'top_right', 'bottom_left', 'bottom_right'])
-            cropped_image = CIFAR10Utils.crop_single_corner(image, corner, crop_size)
+            cropped_image, crop_coords = CIFAR10Utils.crop_single_corner(image, corner, crop_size)
             resized_image = resize(cropped_image, [32, 32])
+            return resized_image, crop_coords
         elif mode == 3:
-            resized_image = CIFAR10Utils.crop_resize_combine_corners(image, (crop_size, crop_size))
+            resized_image, crop_coords = CIFAR10Utils.crop_resize_combine_corners(image, (crop_size, crop_size))
+            return resized_image, crop_coords
         elif mode == 4 and model is not None:
             return CIFAR10Utils.segment_image(image, model, fill_background=fill_background)
         else:
             raise ValueError("Invalid mode or missing model for segmentation.")
-
-        if resized_image is None:
-            raise ValueError("The resized image was not created. Check the mode provided.")
-        return resized_image
 
 class CIFAR10WithBackground(torchvision.datasets.CIFAR10):
     def __init__(self, *args, model=None, mode=None, fill_background=None, crop_size=None, **kwargs):
@@ -113,7 +130,7 @@ class CIFAR10WithBackground(torchvision.datasets.CIFAR10):
         else:
             label = self.targets[original_index]
 
-        image = transform_to_tensor(image)
+        #image = transform_to_tensor(image)
 
         return image, torch.tensor(label, dtype=torch.long)
 
@@ -297,7 +314,7 @@ class SegmentedCIFAR10WithObject(torchvision.datasets.CIFAR10):
         else:
             label = self.targets[original_index]
 
-        image = transform_to_tensor(image)
+        #image = transform_to_tensor(image)
 
         return image, torch.tensor(label, dtype=torch.long)
 

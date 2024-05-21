@@ -96,7 +96,6 @@ def plot_prah_results(prah_values, classified_counts, accuracies):
     plt.tight_layout()
     plt.show()
 
-
 def calculate_statistics(input_file_path, output_file_path):
     data = pd.read_csv(input_file_path)
 
@@ -137,20 +136,33 @@ def aggregate_model_data_and_save(file_path, output_file_path):
 def create_plots(data):
     plt.figure(figsize=(15, 5))
 
+    # Plot 1: Presnosť vs Hodnota PRAH
     plt.subplot(1, 3, 1)
     sns.lineplot(x='PRAH', y='PRAH Accuracy', data=data, marker='o')
     plt.title('Presnosť vs Hodnota PRAH')
     plt.xlabel('Hodnota PRAH')
     plt.ylabel('Presnosť (%)')
 
+    # Plot 2: Správne klas. vs. Nesprávne klas.
+    melted_data_1 = data.melt(id_vars=['PRAH'], value_vars=['Correct Classified', 'Incorrect Classified'], var_name='Kategória', value_name='Počet')
+    melted_data_1['Kategória'] = melted_data_1['Kategória'].replace({
+        'Correct Classified': 'Správne klasifikované',
+        'Incorrect Classified': 'Nesprávne klasifikované'
+    })
     plt.subplot(1, 3, 2)
-    sns.barplot(x='PRAH', y='Count', hue='Category', data=data.melt(id_vars=['PRAH'], value_vars=['Correct Classified', 'Incorrect Classified'], var_name='Category', value_name='Count'))
+    sns.barplot(x='PRAH', y='Počet', hue='Kategória', data=melted_data_1)
     plt.title('Správne klas. vs. Nesprávne klas.')
     plt.xlabel('Hodnota PRAH')
     plt.ylabel('Počet')
 
+    # Plot 3: Klasifikované vs. Neklasifikované
+    melted_data_2 = data.melt(id_vars=['PRAH'], value_vars=['Classified', 'Not Classified'], var_name='Kategória', value_name='Počet')
+    melted_data_2['Kategória'] = melted_data_2['Kategória'].replace({
+        'Classified': 'Klasifikované',
+        'Not Classified': 'Neklasifikované'
+    })
     plt.subplot(1, 3, 3)
-    sns.barplot(x='PRAH', y='Count', hue='Category', data=data.melt(id_vars=['PRAH'], value_vars=['Classified', 'Not Classified'], var_name='Category', value_name='Count'))
+    sns.barplot(x='PRAH', y='Počet', hue='Kategória', data=melted_data_2)
     plt.title('Klasifikované vs. Neklasifikované')
     plt.xlabel('Hodnota PRAH')
     plt.ylabel('Počet')
@@ -180,7 +192,6 @@ def split_csv(input_file):
     optim_prah_df.columns = ['Model Name', 'optim.prah_mean', 'optim.prah_std']  # Renaming columns for consistency
     optim_prah_df.to_csv('../csv/optim_prah_results.csv', index=False)
 
-
 def split_csv2(input_file):
     # Read the CSV file
     df = pd.read_csv(input_file)
@@ -189,15 +200,14 @@ def split_csv2(input_file):
     accuracy_df.columns = ['Model Name', 'accuracy_mean', 'optim.prah_mean']  # Renaming columns for consistency
     accuracy_df.to_csv('../csv/accuracy-prah_results.csv', index=False)
 
-#split_csv('../csv/sgd(lr0,01-mo0.9-wd0.001-nest)steplr(ss10-gamma0.1)-batch32-7ep-BCElogit-2method.csv')
-#split_csv2('../csv/sgd(lr0,01-mo0.9-wd0.001-nest)steplr(ss10-gamma0.1)-batch32-7ep-BCElogit-2method.csv')
 
+#calculate_statistics('../csv/new.csv','../csv/new-2method.csv')
+#aggregate_model_data_and_save('../csv/new.csv','../csv/new-1method.csv')
 
+#split_csv('../csv/2method.csv') #ECE, ACE, accuraccy
+#split_csv2('../csv/2method.csv') #accuray_optimalprah
 
-#calculate_statistics('../model_evaluations2.csv','../sgd(lr0,01-mo0.9-wd0.001-nest)steplr(ss10-gamma0.1)-batch32-7ep-BCElogit-2method.csv')
-#aggregate_model_data_and_save('../model_evaluations2.csv','../sgd(lr0,01-mo0.9-wd0.001-nest)steplr(ss10-gamma0.1)-batch32-7ep-BCElogit-1method.csv')
-
-#file_path = '../csv/sgd(lr0,01-mo0.9-wd0.001-nest)steplr(ss10-gamma0.1)-batch32-7ep-BCElogit-1method.csv'
+#file_path = '../csv/1method.csv'
 #data = pd.read_csv(file_path)
 
 #data_special_model = data[data['Model Name'] == "CIFAR10WithBackground-mode2-cr.size4.pth"]
@@ -207,30 +217,25 @@ def split_csv2(input_file):
 #create_plots(data_standard_model)
 
 
-# Load the provided CSV file
 #accuracy_prah_df = pd.read_csv('../csv/accuracy_results.csv')
 
-# Sort the DataFrame by accuracy_mean in descending order and select the top 5 models
 #top5_models = accuracy_prah_df.sort_values(by='accuracy_mean', ascending=False).head(5)
 
-# Generate the LaTeX table
-#latex_table = top5_models[['Model Name', 'accuracy_mean', 'accuracy_std']].to_latex(index=False)
+#latex_table = top5_models[['Model Name', 'accuracy_mean', 'accuracy_std']].to_latex(index=False,float_format="%.4f")
 
 #print(latex_table)
 
-
-#accuracy_prah_df = pd.read_csv('../csv/accuracy_results.csv')
-
-# Sort the DataFrame by accuracy_mean in descending order and select the top 5 models
-#top5_models = accuracy_prah_df.sort_values(by='ACE_mean', ascending=False).head(5)
+accuracy_prah_df = pd.read_csv('../csv/accuracy_results.csv')
 
 # Select the default model's data
-#default_model = accuracy_prah_df[accuracy_prah_df['Model Name'] == 'SegmentedCIFAR10WithObject-mode4-cr.sizeNone.pth']
+default_model = accuracy_prah_df[accuracy_prah_df['Model Name'] == 'SegmentedCIFAR10WithObject-mode4-white.pth']
+def2model = accuracy_prah_df[accuracy_prah_df['Model Name'] == 'SegmentedCIFAR10WithObject-mode4-cr.sizeNone.pth']
 
 # Combine the default model with the top 5 models
-#combined_models = pd.concat([default_model, top5_models])
+combined_models = pd.concat([default_model, def2model])
+combined_models = combined_models.sort_values(by='accuracy_mean', ascending=False)
 
 # Generate the LaTeX table
-#latex_table = default_model[['Model Name', 'accuracy_mean', 'accuracy_std']].to_latex(index=False)
+latex_table = combined_models[['Model Name', 'accuracy_mean', 'accuracy_std']].to_latex(index=False)
 
-#print(latex_table)
+print(latex_table)

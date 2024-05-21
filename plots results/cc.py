@@ -3,27 +3,47 @@ from torchvision.transforms.functional import to_pil_image
 import matplotlib.pyplot as plt
 from data.dataset_factory import DatasetFactory
 from models import create_tiny_resnet
-import torch.nn.functional as F
+from PIL import ImageDraw
+from data.cifar10_dataset import CIFAR10Utils  # Import CIFAR10Utils
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 print(f"Using device: {device}")
 
 segmentation_model = create_tiny_resnet()
 segmentation_model_path = '../segment.pth'
-segmentation_model.load_state_dict(torch.load(segmentation_model_path))
+segmentation_model.load_state_dict(torch.load(segmentation_model_path, map_location=device))
 segmentation_model.eval()
 segmentation_model.to(device)
 
-
 configurations = [
-    {'dataset_class': "SegmentedCIFAR10WithObject",'model': segmentation_model, 'mode': 4, 'fill_background': True, 'crop_size': None },
-    {'dataset_class': "CIFAR10WithBackground", 'model': segmentation_model, 'mode': 4,'fill_background': False, 'crop_size': None },
-    {'dataset_class': "CIFAR10WithBackground", 'model': None, 'mode': 1,'fill_background': None, 'crop_size': 8 },
-    {'dataset_class': "CIFAR10WithBackground", 'model': None, 'mode': 2,'fill_background': None, 'crop_size': 8 },
-    {'dataset_class': "CIFAR10WithBackground", 'model': None, 'mode': 3,'fill_background': None, 'crop_size': 8 },
-
+    {'dataset_class': "SegmentedCIFAR10WithObject", 'model': segmentation_model, 'mode': 4, 'fill_background': True, 'crop_size': None},
+    {'dataset_class': "CIFAR10WithBackground", 'model': segmentation_model, 'mode': 4, 'fill_background': False, 'crop_size': None},
+    {'dataset_class': "CIFAR10WithBackground", 'model': None, 'mode': 1, 'fill_background': None, 'crop_size': 8},
+    {'dataset_class': "CIFAR10WithBackground", 'model': None, 'mode': 2, 'fill_background': None, 'crop_size': 8},
+    {'dataset_class': "CIFAR10WithBackground", 'model': None, 'mode': 3, 'fill_background': None, 'crop_size': 8},
 ]
 
+def plot_images(original_img, processed_img, crop_coords, title):
+    fig, axs = plt.subplots(1, 2, figsize=(10, 5))
+
+    # Plot original image with crop rectangle
+    if crop_coords is not None:
+        draw = ImageDraw.Draw(original_img)
+        if isinstance(crop_coords[0], tuple):
+            for coords in crop_coords:
+                draw.rectangle(coords, outline="red", width=1)
+        else:
+            draw.rectangle(crop_coords, outline="red", width=1)
+    axs[0].imshow(original_img)
+    axs[0].set_title('Originálny obrázok')
+    axs[0].axis('off')
+
+    # Plot processed image
+    axs[1].imshow(processed_img)
+    axs[1].set_title(title)
+    axs[1].axis('off')
+
+    plt.show()
 
 for config in configurations:
     dataset = DatasetFactory.create_dataset(
@@ -34,30 +54,23 @@ for config in configurations:
         model=config.get('model'),
         mode=config.get('mode'),
         fill_background=config.get('fill_background'),
-        crop_size=config.get('crop_size')
+        crop_size=config.get('crop_size', 8)  # Default crop size if not provided
     )
-    img, label = dataset[50004]
-    print(dataset.__len__())
 
-    img = to_pil_image(img) if isinstance(img, torch.Tensor) else img
+    # Retrieve an image and label
+    original_img, label = dataset[0]
 
-    print(f'Label before one_hot: {label}, {label.dtype}')
+    # Convert to PIL image if necessary
+    original_img = to_pil_image(original_img) if isinstance(original_img, torch.Tensor) else original_img
 
-    if isinstance(label, torch.Tensor) and label.dtype == torch.float32:
-        formatted_label = [f'{number:.5f}' for number in label.numpy()]
-        print(f'Soft label: [{', '.join(formatted_label)}] {label.dtype}')
-        plt.figure()
-        plt.imshow(img)
-        plt.title(f'Label: {formatted_label}')
-        plt.show()
-    else:
-        label = torch.tensor(label, dtype=torch.int64) if not isinstance(label, torch.Tensor) else label.long()
-        if label.ndim == 0 or (label.ndim == 1 and label.size(0) == 1):
-            label = label.view(-1)
-            label = F.one_hot(label, num_classes=20).float()
-            formatted_label_one_hot = [f'{number:.5f}' for number in label.numpy().ravel()]
-            print(f'Hard label after one_hot: [{', '.join(formatted_label_one_hot)}] {label.dtype}')
-            plt.figure()
-            plt.imshow(img)
-            plt.title(f'Label: {label}')
-            plt.show()
+    # Apply transformations based on the mode
+    processed_img, crop_coords = CIFAR10Utils.create_background_image(
+        original_img,
+        mode=config['mode'],
+        crop_size=config.get('crop_size'),
+        model=config.get('model'),
+        fill_background=config.get('fill_background')
+    )
+
+    title = f"Mode {config['mode']}" if config['mode'] != 4 else ("Segmentovaný obrázok" if config['fill_background'] else "Segmentovaný obrázok")
+    plot_images(original_img, processed_img, crop_coords, title)

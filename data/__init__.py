@@ -5,7 +5,8 @@ from .cifar10_dataset import (CIFAR10WithBackground,
                               CIFAR10WithClassSpecificBackground,
                               CIFAR10WithClassSpecificBackgroundSoftLabel,
                               CIFAR10WithDistributedClassSpecificSoftBackgroundLabels,
-                              SegmentedCIFAR10WithObject)
+                              SegmentedCIFAR10WithObject,
+                              CIFAR10Utils)
 from .dataset_factory import DatasetFactory
 
 DatasetFactory.register_dataset("DefaultCIFAR10", DefaultCIFAR10)

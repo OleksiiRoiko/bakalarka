@@ -14,8 +14,8 @@ from torch.optim.lr_scheduler import StepLR
 
 
 def train_model(model, train_loader, val_loader, device, num_epochs, num_classes):
-    optimizer = optim.Adam(model.parameters(), lr=0.0001)  # Adjusted learning rate
-    scheduler = StepLR(optimizer, step_size=2, gamma=0.1)  # Adjusted for effect within 7 epochs
+    optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9, weight_decay=0.001, nesterov=True)
+    scheduler = StepLR(optimizer, step_size=10, gamma=0.1)
     criterion = BCEWithLogitsLoss()
 
     train_losses, train_accuracies, val_losses, val_accuracies = [], [], [], []
@@ -56,7 +56,7 @@ def train_model(model, train_loader, val_loader, device, num_epochs, num_classes
 
         scheduler.step()
 
-        # Print training and validation results
+        # Print training and validation resultsm
         print(f'Epoch {epoch+1}/{num_epochs}, Train Loss: {epoch_train_loss:.4f}, '
               f'Train Acc: {epoch_train_accuracy:.2f}%, '
               f'Val Loss: {val_loss:.4f}, Val Acc: {val_accuracy:.2f}%')
@@ -75,62 +75,24 @@ def main():
     segmentation_model.eval()
     segmentation_model.to(device)
 
-
     configurations = [
 
-        {'num_epochs': 5, 'num_classes': 10,'dataset_name': 'SegmentedCIFAR10WithObject','model': segmentation_model, 'mode': 4, 'fill_background': True,'crop_size': None, 'batch_size': 32 },
+        {'num_epochs': 7, 'num_classes': 10,'dataset_name': 'SegmentedCIFAR10WithObject','model': segmentation_model, 'mode': 4, 'fill_background': True,'crop_size': None, 'batch_size': 32 },
 
-        {'num_epochs': 5, 'num_classes': 10,'dataset_name': 'DefaultCIFAR10','model': None, 'mode': None, 'fill_background': None,'crop_size': None, 'batch_size': 32 },
+        {'num_epochs': 7, 'num_classes': 11,'dataset_name': 'CIFAR10WithBackground','model': segmentation_model, 'mode': 4, 'fill_background': False,'crop_size': None, 'batch_size': 32 },
 
-        {'num_epochs': 5, 'num_classes': 11,'dataset_name': 'CIFAR10WithBackground','model': None, 'mode': 1, 'fill_background': None,'crop_size': 4, 'batch_size': 32 },
-        {'num_epochs': 5, 'num_classes': 11,'dataset_name': 'CIFAR10WithBackground','model': None, 'mode': 1, 'fill_background': None,'crop_size': 8, 'batch_size': 32 },
-        {'num_epochs': 5, 'num_classes': 11,'dataset_name': 'CIFAR10WithBackground','model': None, 'mode': 2, 'fill_background': None,'crop_size': 4, 'batch_size': 32 },
-        {'num_epochs': 5, 'num_classes': 11,'dataset_name': 'CIFAR10WithBackground','model': None, 'mode': 2, 'fill_background': None,'crop_size': 8, 'batch_size': 32 },
-        {'num_epochs': 5, 'num_classes': 11,'dataset_name': 'CIFAR10WithBackground','model': None, 'mode': 3, 'fill_background': None,'crop_size': 4, 'batch_size': 32 },
-        {'num_epochs': 5, 'num_classes': 11,'dataset_name': 'CIFAR10WithBackground','model': None, 'mode': 3, 'fill_background': None,'crop_size': 8, 'batch_size': 32 },
-        {'num_epochs': 5, 'num_classes': 11,'dataset_name': 'CIFAR10WithBackground','model': segmentation_model, 'mode': 4, 'fill_background': False,'crop_size': None, 'batch_size': 32 },
+        {'num_epochs': 7, 'num_classes': 11,'dataset_name': 'CIFAR10WithBackgroundSoftLabel','model': segmentation_model, 'mode': 4, 'fill_background': False,'crop_size': None, 'batch_size': 32 },
 
-        {'num_epochs': 5, 'num_classes': 11,'dataset_name': 'CIFAR10WithBackgroundSoftLabel','model': None, 'mode': 1, 'fill_background': None,'crop_size': 4, 'batch_size': 32 },
-        {'num_epochs': 5, 'num_classes': 11,'dataset_name': 'CIFAR10WithBackgroundSoftLabel','model': None, 'mode': 1, 'fill_background': None,'crop_size': 8, 'batch_size': 32 },
-        {'num_epochs': 5, 'num_classes': 11,'dataset_name': 'CIFAR10WithBackgroundSoftLabel','model': None, 'mode': 2, 'fill_background': None,'crop_size': 4, 'batch_size': 32 },
-        {'num_epochs': 5, 'num_classes': 11,'dataset_name': 'CIFAR10WithBackgroundSoftLabel','model': None, 'mode': 2, 'fill_background': None,'crop_size': 8, 'batch_size': 32 },
-        {'num_epochs': 5, 'num_classes': 11,'dataset_name': 'CIFAR10WithBackgroundSoftLabel','model': None, 'mode': 3, 'fill_background': None,'crop_size': 4, 'batch_size': 32 },
-        {'num_epochs': 5, 'num_classes': 11,'dataset_name': 'CIFAR10WithBackgroundSoftLabel','model': None, 'mode': 3, 'fill_background': None,'crop_size': 8, 'batch_size': 32 },
-        {'num_epochs': 5, 'num_classes': 11,'dataset_name': 'CIFAR10WithBackgroundSoftLabel','model': segmentation_model, 'mode': 4, 'fill_background': False,'crop_size': None, 'batch_size': 32 },
+        {'num_epochs': 7, 'num_classes': 11,'dataset_name': 'CIFAR10WithDistributedSoftBackgroundLabels','model': segmentation_model, 'mode': 4, 'fill_background': False,'crop_size': None, 'batch_size': 32 },
 
-        {'num_epochs': 5, 'num_classes': 11,'dataset_name': 'CIFAR10WithDistributedSoftBackgroundLabels','model': None, 'mode': 1, 'fill_background': None,'crop_size': 4, 'batch_size': 32 },
-        {'num_epochs': 5, 'num_classes': 11,'dataset_name': 'CIFAR10WithDistributedSoftBackgroundLabels','model': None, 'mode': 1, 'fill_background': None,'crop_size': 8, 'batch_size': 32 },
-        {'num_epochs': 5, 'num_classes': 11,'dataset_name': 'CIFAR10WithDistributedSoftBackgroundLabels','model': None, 'mode': 2, 'fill_background': None,'crop_size': 4, 'batch_size': 32 },
-        {'num_epochs': 5, 'num_classes': 11,'dataset_name': 'CIFAR10WithDistributedSoftBackgroundLabels','model': None, 'mode': 2, 'fill_background': None,'crop_size': 8, 'batch_size': 32 },
-        {'num_epochs': 5, 'num_classes': 11,'dataset_name': 'CIFAR10WithDistributedSoftBackgroundLabels','model': None, 'mode': 3, 'fill_background': None,'crop_size': 4, 'batch_size': 32 },
-        {'num_epochs': 5, 'num_classes': 11,'dataset_name': 'CIFAR10WithDistributedSoftBackgroundLabels','model': None, 'mode': 3, 'fill_background': None,'crop_size': 8, 'batch_size': 32 },
-        {'num_epochs': 5, 'num_classes': 11,'dataset_name': 'CIFAR10WithDistributedSoftBackgroundLabels','model': segmentation_model, 'mode': 4, 'fill_background': False,'crop_size': None, 'batch_size': 32 },
+        {'num_epochs': 7, 'num_classes': 20,'dataset_name': 'CIFAR10WithClassSpecificBackground','model': segmentation_model, 'mode': 4, 'fill_background': False,'crop_size': None, 'batch_size': 32 },
 
-        {'num_epochs': 5, 'num_classes': 20,'dataset_name': 'CIFAR10WithClassSpecificBackground','model': None, 'mode': 1, 'fill_background': None,'crop_size': 4, 'batch_size': 32 },
-        {'num_epochs': 5, 'num_classes': 20,'dataset_name': 'CIFAR10WithClassSpecificBackground','model': None, 'mode': 1, 'fill_background': None,'crop_size': 8, 'batch_size': 32 },
-        {'num_epochs': 5, 'num_classes': 20,'dataset_name': 'CIFAR10WithClassSpecificBackground','model': None, 'mode': 2, 'fill_background': None,'crop_size': 4, 'batch_size': 32 },
-        {'num_epochs': 5, 'num_classes': 20,'dataset_name': 'CIFAR10WithClassSpecificBackground','model': None, 'mode': 2, 'fill_background': None,'crop_size': 8, 'batch_size': 32 },
-        {'num_epochs': 5, 'num_classes': 20,'dataset_name': 'CIFAR10WithClassSpecificBackground','model': None, 'mode': 3, 'fill_background': None,'crop_size': 4, 'batch_size': 32 },
-        {'num_epochs': 5, 'num_classes': 20,'dataset_name': 'CIFAR10WithClassSpecificBackground','model': None, 'mode': 3, 'fill_background': None,'crop_size': 8, 'batch_size': 32 },
-        {'num_epochs': 5, 'num_classes': 20,'dataset_name': 'CIFAR10WithClassSpecificBackground','model': segmentation_model, 'mode': 4, 'fill_background': False,'crop_size': None, 'batch_size': 32 },
+        {'num_epochs': 7, 'num_classes': 20,'dataset_name': 'CIFAR10WithClassSpecificBackgroundSoftLabel','model': segmentation_model, 'mode': 4, 'fill_background': False,'crop_size': None, 'batch_size': 32 },
 
-        {'num_epochs': 5, 'num_classes': 20,'dataset_name': 'CIFAR10WithClassSpecificBackgroundSoftLabel','model': None, 'mode': 1, 'fill_background': None,'crop_size': 4, 'batch_size': 32 },
-        {'num_epochs': 5, 'num_classes': 20,'dataset_name': 'CIFAR10WithClassSpecificBackgroundSoftLabel','model': None, 'mode': 1, 'fill_background': None,'crop_size': 8, 'batch_size': 32 },
-        {'num_epochs': 5, 'num_classes': 20,'dataset_name': 'CIFAR10WithClassSpecificBackgroundSoftLabel','model': None, 'mode': 2, 'fill_background': None,'crop_size': 4, 'batch_size': 32 },
-        {'num_epochs': 5, 'num_classes': 20,'dataset_name': 'CIFAR10WithClassSpecificBackgroundSoftLabel','model': None, 'mode': 2, 'fill_background': None,'crop_size': 8, 'batch_size': 32 },
-        {'num_epochs': 5, 'num_classes': 20,'dataset_name': 'CIFAR10WithClassSpecificBackgroundSoftLabel','model': None, 'mode': 3, 'fill_background': None,'crop_size': 4, 'batch_size': 32 },
-        {'num_epochs': 5, 'num_classes': 20,'dataset_name': 'CIFAR10WithClassSpecificBackgroundSoftLabel','model': None, 'mode': 3, 'fill_background': None,'crop_size': 8, 'batch_size': 32 },
-        {'num_epochs': 5, 'num_classes': 20,'dataset_name': 'CIFAR10WithClassSpecificBackgroundSoftLabel','model': segmentation_model, 'mode': 4, 'fill_background': False,'crop_size': None, 'batch_size': 32 },
-
-        {'num_epochs': 5, 'num_classes': 20,'dataset_name': 'CIFAR10WithDistributedClassSpecificSoftBackgroundLabels','model': None, 'mode': 1, 'fill_background': None,'crop_size': 4, 'batch_size': 32 },
-        {'num_epochs': 5, 'num_classes': 20,'dataset_name': 'CIFAR10WithDistributedClassSpecificSoftBackgroundLabels','model': None, 'mode': 1, 'fill_background': None,'crop_size': 8, 'batch_size': 32 },
-        {'num_epochs': 5, 'num_classes': 20,'dataset_name': 'CIFAR10WithDistributedClassSpecificSoftBackgroundLabels','model': None, 'mode': 2, 'fill_background': None,'crop_size': 4, 'batch_size': 32 },
-        {'num_epochs': 5, 'num_classes': 20,'dataset_name': 'CIFAR10WithDistributedClassSpecificSoftBackgroundLabels','model': None, 'mode': 2, 'fill_background': None,'crop_size': 8, 'batch_size': 32 },
-        {'num_epochs': 5, 'num_classes': 20,'dataset_name': 'CIFAR10WithDistributedClassSpecificSoftBackgroundLabels','model': None, 'mode': 3, 'fill_background': None,'crop_size': 4, 'batch_size': 32 },
-        {'num_epochs': 5, 'num_classes': 20,'dataset_name': 'CIFAR10WithDistributedClassSpecificSoftBackgroundLabels','model': None, 'mode': 3, 'fill_background': None,'crop_size': 8, 'batch_size': 32 },
-        {'num_epochs': 5, 'num_classes': 20,'dataset_name': 'CIFAR10WithDistributedClassSpecificSoftBackgroundLabels','model': segmentation_model, 'mode': 4, 'fill_background': False,'crop_size': None, 'batch_size': 32 },
+        {'num_epochs': 7, 'num_classes': 20,'dataset_name': 'CIFAR10WithDistributedClassSpecificSoftBackgroundLabels','model': segmentation_model, 'mode': 4, 'fill_background': False,'crop_size': None, 'batch_size': 32 },
 
     ]
+
 
     for config in configurations:
         train_dataset = DatasetFactory.create_dataset(
@@ -167,7 +129,7 @@ def main():
 
         plot_learning_curves(train_losses, train_accuracies, val_losses, val_accuracies)
 
-        save_directory = os.path.join(os.path.dirname(__file__), 'adam(lr0.0001)steplr(ss2-gamma0.1)-batch32-5ep-BCElogit-1time')
+        save_directory = os.path.join(os.path.dirname(__file__), 'sgd(lr0,01-mo0.9-wd0.001-nest)steplr(ss10-gamma0.1)-batch32-7ep-BCElogit-5time')
         os.makedirs(save_directory, exist_ok=True)
         model_path = os.path.join(save_directory, f"{config['dataset_name']}-mode{config['mode']}-cr.size{config['crop_size']}.pth")
         save_model(model, model_path)
@@ -178,5 +140,48 @@ if __name__ == "__main__":
 
 
 """
+        {'num_epochs': 7, 'num_classes': 10,'dataset_name': 'DefaultCIFAR10','model': None, 'mode': None, 'fill_background': None,'crop_size': None, 'batch_size': 32 },
+
+        {'num_epochs': 7, 'num_classes': 11,'dataset_name': 'CIFAR10WithBackground','model': None, 'mode': 1, 'fill_background': None,'crop_size': 4, 'batch_size': 32 },
+        {'num_epochs': 7, 'num_classes': 11,'dataset_name': 'CIFAR10WithBackground','model': None, 'mode': 1, 'fill_background': None,'crop_size': 8, 'batch_size': 32 },
+        {'num_epochs': 7, 'num_classes': 11,'dataset_name': 'CIFAR10WithBackground','model': None, 'mode': 2, 'fill_background': None,'crop_size': 4, 'batch_size': 32 },
+        {'num_epochs': 7, 'num_classes': 11,'dataset_name': 'CIFAR10WithBackground','model': None, 'mode': 2, 'fill_background': None,'crop_size': 8, 'batch_size': 32 },
+        {'num_epochs': 7, 'num_classes': 11,'dataset_name': 'CIFAR10WithBackground','model': None, 'mode': 3, 'fill_background': None,'crop_size': 4, 'batch_size': 32 },
+        {'num_epochs': 7, 'num_classes': 11,'dataset_name': 'CIFAR10WithBackground','model': None, 'mode': 3, 'fill_background': None,'crop_size': 8, 'batch_size': 32 },
+
+        {'num_epochs': 7, 'num_classes': 11,'dataset_name': 'CIFAR10WithBackgroundSoftLabel','model': None, 'mode': 1, 'fill_background': None,'crop_size': 4, 'batch_size': 32 },
+        {'num_epochs': 7, 'num_classes': 11,'dataset_name': 'CIFAR10WithBackgroundSoftLabel','model': None, 'mode': 1, 'fill_background': None,'crop_size': 8, 'batch_size': 32 },
+        {'num_epochs': 7, 'num_classes': 11,'dataset_name': 'CIFAR10WithBackgroundSoftLabel','model': None, 'mode': 2, 'fill_background': None,'crop_size': 4, 'batch_size': 32 },
+        {'num_epochs': 7, 'num_classes': 11,'dataset_name': 'CIFAR10WithBackgroundSoftLabel','model': None, 'mode': 2, 'fill_background': None,'crop_size': 8, 'batch_size': 32 },
+        {'num_epochs': 7, 'num_classes': 11,'dataset_name': 'CIFAR10WithBackgroundSoftLabel','model': None, 'mode': 3, 'fill_background': None,'crop_size': 4, 'batch_size': 32 },
+        {'num_epochs': 7, 'num_classes': 11,'dataset_name': 'CIFAR10WithBackgroundSoftLabel','model': None, 'mode': 3, 'fill_background': None,'crop_size': 8, 'batch_size': 32 },
+
+        {'num_epochs': 7, 'num_classes': 11,'dataset_name': 'CIFAR10WithDistributedSoftBackgroundLabels','model': None, 'mode': 1, 'fill_background': None,'crop_size': 4, 'batch_size': 32 },
+        {'num_epochs': 7, 'num_classes': 11,'dataset_name': 'CIFAR10WithDistributedSoftBackgroundLabels','model': None, 'mode': 1, 'fill_background': None,'crop_size': 8, 'batch_size': 32 },
+        {'num_epochs': 7, 'num_classes': 11,'dataset_name': 'CIFAR10WithDistributedSoftBackgroundLabels','model': None, 'mode': 2, 'fill_background': None,'crop_size': 4, 'batch_size': 32 },
+        {'num_epochs': 7, 'num_classes': 11,'dataset_name': 'CIFAR10WithDistributedSoftBackgroundLabels','model': None, 'mode': 2, 'fill_background': None,'crop_size': 8, 'batch_size': 32 },
+        {'num_epochs': 7, 'num_classes': 11,'dataset_name': 'CIFAR10WithDistributedSoftBackgroundLabels','model': None, 'mode': 3, 'fill_background': None,'crop_size': 4, 'batch_size': 32 },
+        {'num_epochs': 7, 'num_classes': 11,'dataset_name': 'CIFAR10WithDistributedSoftBackgroundLabels','model': None, 'mode': 3, 'fill_background': None,'crop_size': 8, 'batch_size': 32 },
+
+        {'num_epochs': 7, 'num_classes': 20,'dataset_name': 'CIFAR10WithClassSpecificBackground','model': None, 'mode': 1, 'fill_background': None,'crop_size': 4, 'batch_size': 32 },
+        {'num_epochs': 7, 'num_classes': 20,'dataset_name': 'CIFAR10WithClassSpecificBackground','model': None, 'mode': 1, 'fill_background': None,'crop_size': 8, 'batch_size': 32 },
+        {'num_epochs': 7, 'num_classes': 20,'dataset_name': 'CIFAR10WithClassSpecificBackground','model': None, 'mode': 2, 'fill_background': None,'crop_size': 4, 'batch_size': 32 },
+        {'num_epochs': 7, 'num_classes': 20,'dataset_name': 'CIFAR10WithClassSpecificBackground','model': None, 'mode': 2, 'fill_background': None,'crop_size': 8, 'batch_size': 32 },
+        {'num_epochs': 7, 'num_classes': 20,'dataset_name': 'CIFAR10WithClassSpecificBackground','model': None, 'mode': 3, 'fill_background': None,'crop_size': 4, 'batch_size': 32 },
+        {'num_epochs': 7, 'num_classes': 20,'dataset_name': 'CIFAR10WithClassSpecificBackground','model': None, 'mode': 3, 'fill_background': None,'crop_size': 8, 'batch_size': 32 },
+
+        {'num_epochs': 7, 'num_classes': 20,'dataset_name': 'CIFAR10WithClassSpecificBackgroundSoftLabel','model': None, 'mode': 1, 'fill_background': None,'crop_size': 4, 'batch_size': 32 },
+        {'num_epochs': 7, 'num_classes': 20,'dataset_name': 'CIFAR10WithClassSpecificBackgroundSoftLabel','model': None, 'mode': 1, 'fill_background': None,'crop_size': 8, 'batch_size': 32 },
+        {'num_epochs': 7, 'num_classes': 20,'dataset_name': 'CIFAR10WithClassSpecificBackgroundSoftLabel','model': None, 'mode': 2, 'fill_background': None,'crop_size': 4, 'batch_size': 32 },
+        {'num_epochs': 7, 'num_classes': 20,'dataset_name': 'CIFAR10WithClassSpecificBackgroundSoftLabel','model': None, 'mode': 2, 'fill_background': None,'crop_size': 8, 'batch_size': 32 },
+        {'num_epochs': 7, 'num_classes': 20,'dataset_name': 'CIFAR10WithClassSpecificBackgroundSoftLabel','model': None, 'mode': 3, 'fill_background': None,'crop_size': 4, 'batch_size': 32 },
+        {'num_epochs': 7, 'num_classes': 20,'dataset_name': 'CIFAR10WithClassSpecificBackgroundSoftLabel','model': None, 'mode': 3, 'fill_background': None,'crop_size': 8, 'batch_size': 32 },
+
+        {'num_epochs': 7, 'num_classes': 20,'dataset_name': 'CIFAR10WithDistributedClassSpecificSoftBackgroundLabels','model': None, 'mode': 1, 'fill_background': None,'crop_size': 4, 'batch_size': 32 },
+        {'num_epochs': 7, 'num_classes': 20,'dataset_name': 'CIFAR10WithDistributedClassSpecificSoftBackgroundLabels','model': None, 'mode': 1, 'fill_background': None,'crop_size': 8, 'batch_size': 32 },
+        {'num_epochs': 7, 'num_classes': 20,'dataset_name': 'CIFAR10WithDistributedClassSpecificSoftBackgroundLabels','model': None, 'mode': 2, 'fill_background': None,'crop_size': 4, 'batch_size': 32 },
+        {'num_epochs': 7, 'num_classes': 20,'dataset_name': 'CIFAR10WithDistributedClassSpecificSoftBackgroundLabels','model': None, 'mode': 2, 'fill_background': None,'crop_size': 8, 'batch_size': 32 },
+        {'num_epochs': 7, 'num_classes': 20,'dataset_name': 'CIFAR10WithDistributedClassSpecificSoftBackgroundLabels','model': None, 'mode': 3, 'fill_background': None,'crop_size': 4, 'batch_size': 32 },
+        {'num_epochs': 7, 'num_classes': 20,'dataset_name': 'CIFAR10WithDistributedClassSpecificSoftBackgroundLabels','model': None, 'mode': 3, 'fill_background': None,'crop_size': 8, 'batch_size': 32 },
         
 """

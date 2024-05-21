@@ -108,12 +108,12 @@ def load_and_evaluate(model_dir,specific_model_filename):
         evaluation_results = new_stdout.getvalue()
 
         model_name = os.path.basename(model_path)
-        store_model_evaluation(model_name, evaluation_results, '../csv/image.csv')
+        store_model_evaluation(model_name, evaluation_results, '../csv/new.csv')
 
 
 
 if __name__ == "__main__":
-    model_dir = '../training/adam(lr0.0001)steplr(ss2-gamma0.1)-batch32-5ep-BCElogit-1time'
+    model_dir = '../training/sgd(lr0,01-mo0.9-wd0.001-nest)steplr(ss10-gamma0.1)-batch32-7ep-BCElogit-5time'
     specific_model = None
     load_and_evaluate(model_dir, specific_model_filename=specific_model)
 
